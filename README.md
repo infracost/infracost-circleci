@@ -157,6 +157,7 @@ For different commenting options `infracost comment` command supports the follow
 - `--behavior <value>`: Optional, defaults to `update`. The behavior to use when posting cost estimate comments. Must be one of the following:
   - `update`: Create a single comment and update it on changes. This is the "quietest" option. Pull request followers will only be notified on the comment create (not updates), and the comment will stay at the same location in the comment history.
   - `delete-and-new`: Delete previous cost estimate comments and create a new one. Pull request followers will be notified on each comment.
+  - `hide-and-new`: Minimize previous cost estimate comments and create a new one. Pull request followers will be notified on each comment. Only supported by GitHub.
   - `new`: Create a new cost estimate comment. Pull request followers will be notified on each comment.
 - `--pull-request <pull-request-number>`: Required when posting a comment on a pull request. Mutually exclusive with `--commit` flag.
 - `--commit <commit-sha>`: Required when posting a comment on a commit. Mutually exclusive with `--pull-request` flag. Not available when bitbucket-server-url is set.
