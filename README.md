@@ -32,6 +32,12 @@ This project provides instructions for using Infracost in a CircleCI pipeline, i
           # If your terraform files are in a subdirectory, set TF_ROOT accordingly
           TF_ROOT: PATH/TO/TERRAFORM/CODE # Update this!
         steps:
+          - run:
+              name: Skip if not pull request
+              command: |
+                if [ "$CIRCLE_PULL_REQUEST" == "" ]; then
+                  circleci step halt
+                fi
           - checkout
           - run:
               name: Run terraform plan
@@ -52,6 +58,12 @@ This project provides instructions for using Infracost in a CircleCI pipeline, i
           # See https://www.infracost.io/docs/integrations/cicd/#docker-images for other options
           - image: infracost/infracost:ci-0.9
         steps:
+          - run:
+              name: Skip if not pull request
+              command: |
+                if [ "$CIRCLE_PULL_REQUEST" == "" ]; then
+                  circleci step halt
+                fi
           - attach_workspace:
               at: /tmp
           - checkout
@@ -101,6 +113,12 @@ This project provides instructions for using Infracost in a CircleCI pipeline, i
         environment:  # If your terraform files are in a subdirectory, set TF_ROOT accordingly
           TF_ROOT: PATH/TO/TERRAFORM/CODE # Update this!
         steps:
+          - run:
+              name: Skip if not pull request
+              command: |
+                if [ "$CIRCLE_PULL_REQUEST" == "" ]; then
+                  circleci step halt
+                fi
           - checkout
           - run:
               name: Run terraform plan
@@ -121,6 +139,12 @@ This project provides instructions for using Infracost in a CircleCI pipeline, i
           # See https://www.infracost.io/docs/integrations/cicd/#docker-images for other options
           - image: infracost/infracost:ci-0.9
         steps:
+          - run:
+              name: Skip if not pull request
+              command: |
+                if [ "$CIRCLE_PULL_REQUEST" == "" ]; then
+                  circleci step halt
+                fi
           - attach_workspace:
               at: /tmp
           - checkout
