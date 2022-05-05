@@ -156,6 +156,7 @@ This project provides instructions for using Infracost in a CircleCI pipeline, i
                 # Generate Infracost JSON output, the following docs might be useful:
                 # Multi-project/workspaces: https://www.infracost.io/docs/features/config_file
                 # Combine Infracost JSON files: https://www.infracost.io/docs/features/cli_commands/#combined-output-formats
+                # Environment variables: https://www.infracost.io/docs/integrations/environment_variables/
                 infracost breakdown --path /tmp/plan.json --format json --out-file infracost.json
           - run:
               name: Run Infracost comment
