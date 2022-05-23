@@ -168,17 +168,6 @@ This project provides instructions for using Infracost in a CircleCI pipeline, i
 
 ## Comment options
 
-For different commenting options `infracost comment` command supports the following flags:
-
-- `--behavior <value>`: Optional, defaults to `update`. The behavior to use when posting cost estimate comments. Must be one of the following:
-  - `update`: Create a single comment and update it on changes. This is the "quietest" option. Pull request followers will only be notified on the comment create (not updates), and the comment will stay at the same location in the comment history.
-  - `delete-and-new`: Delete previous cost estimate comments and create a new one. Pull request followers will be notified on each comment.
-  - `hide-and-new`: Minimize previous cost estimate comments and create a new one. Pull request followers will be notified on each comment. Only supported by GitHub.
-  - `new`: Create a new cost estimate comment. Pull request followers will be notified on each comment.
-- `--pull-request <pull-request-number>`: Required when posting a comment on a pull request. Mutually exclusive with `--commit` flag.
-- `--commit <commit-sha>`: Required when posting a comment on a commit. Mutually exclusive with `--pull-request` flag. Not available when bitbucket-server-url is set.
-- `--tag <tag>`:  Optional. Customize hidden markdown tag used to detect comments posted by Infracost. This is useful if you have multiple workflows that post comments to the same pull request or commit and you want to avoid them over-writing each other.
-
 Run `infracost comment github --help` or `infracost comment bitbucket --help` to see the the full list of options or [see our docs](https://www.infracost.io/docs/features/cli_commands#comment-on-pull-requests).
 
 ## Examples
