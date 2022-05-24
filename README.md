@@ -110,7 +110,7 @@ This project provides instructions for using Infracost in a CircleCI pipeline, i
         docker:
           - image: infracost/infracost:ci-0.10
         environment:
-          TF_ROOT: terraform
+          TF_ROOT: terraform # Update this to be your the path to your terraform code!
           # IMPORTANT: update this to your target branch, e.g. main, master
           BASE_BRANCH: main
         steps:
