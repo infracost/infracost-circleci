@@ -15,7 +15,7 @@ This project provides instructions for using Infracost in a CircleCI pipeline, i
 
 ![Example GitHub screenshot](https://github.com/infracost/actions/blob/master/.github/assets/screenshot.png?raw=true)
 
-1. In CircleCI, go to your Project Settings > Environment Variables, and add environment variables for `INFRACOST_API_KEY`, `GITHUB_TOKEN`, and any other required credentials (e.g. `AWS_ACCESS_KEY_ID`).
+1. In CircleCI, go to your Project Settings > Environment Variables, and add environment variables for `INFRACOST_API_KEY`, `GITHUB_TOKEN`.
 
 2. We recommend you enable CircleCI's "Only build pull requests" option. This setting is in CircleCI's Project > Advanced settings page.
 
@@ -25,38 +25,15 @@ This project provides instructions for using Infracost in a CircleCI pipeline, i
     version: 2.1
 
     jobs:
-      terraform_plan:
-        docker:
-          - image: hashicorp/terraform:latest
-        environment:
-          # If your terraform files are in a subdirectory, set TF_ROOT accordingly
-          TF_ROOT: PATH/TO/TERRAFORM/CODE # Update this!
-        steps:
-          - run:
-              name: Skip if not pull request
-              command: |
-                if [ "$CIRCLE_PULL_REQUEST" == "" ]; then
-                  circleci step halt
-                fi
-          - checkout
-          - run:
-              name: Run terraform plan
-              command: |
-                # IMPORTANT: add any required steps here to setup cloud credentials so Terraform can run
-                cd $TF_ROOT
-                terraform init
-                terraform plan -out tfplan.binary
-                terraform show -json tfplan.binary > /tmp/plan.json
-          - persist_to_workspace:
-              root: /tmp
-              paths:
-                - plan.json
       infracost:
-        working_directory: terraform
+        # Always use the latest 0.10.x version to pick up bug fixes and new resources.
+        # See https://www.infracost.io/docs/integrations/cicd/#docker-images for other options
         docker:
-          # Always use the latest 0.9.x version to pick up bug fixes and new resources.
-          # See https://www.infracost.io/docs/integrations/cicd/#docker-images for other options
-          - image: infracost/infracost:ci-0.9
+          - image: infracost/infracost:ci-0.10
+        environment:
+          TF_ROOT: terraform # Update this to be your the path to your terraform code!
+          # IMPORTANT: update this to your target branch, e.g. main, master
+          BASE_BRANCH: main
         steps:
           - run:
               name: Skip if not pull request
@@ -67,28 +44,46 @@ This project provides instructions for using Infracost in a CircleCI pipeline, i
           - attach_workspace:
               at: /tmp
           - checkout
+          # Clone the base branch of the pull request (e.g. main/master) into a temp directory.
           - run:
-              name: Run Infracost breakdown
-              command: |
-                # Generate Infracost JSON output, the following docs might be useful:
-                # Multi-project/workspaces: https://www.infracost.io/docs/features/config_file
-                # Combine Infracost JSON files: https://www.infracost.io/docs/features/cli_commands/#combined-output-formats
-                infracost breakdown --path /tmp/plan.json --format json --out-file infracost.json
+              name: Checkout base branch
+              command: git clone $CIRCLE_REPOSITORY_URL --branch=$BASE_BRANCH --single-branch /tmp/base
+          # Generate Infracost JSON file as the baseline.
           - run:
-              name: Run Infracost comment
+              name: Generate Infracost cost estimate baseline
               command: |
-                # Extract the PR number from the PR URL
-                PULL_REQUEST_NUMBER=${CIRCLE_PULL_REQUEST##*/}
-                # See the 'Comment options' section in our README below for other options.
-                infracost comment github --path infracost.json --repo $CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME --pull-request $PULL_REQUEST_NUMBER --github-token $GITHUB_TOKEN
-
+                  infracost breakdown --path=${TF_ROOT} \
+                                      --format=json \
+                                      --out-file=/tmp/infracost-base.json
+          # Generate an Infracost diff and save it to a JSON file.
+          - run:
+              name: Generate Infracost cost estimate baseline
+              command: |
+                  infracost diff --path=${TF_ROOT} \
+                                --format=json \
+                                --compare-to=/tmp/infracost-base.json \
+                                --out-file=/tmp/infracost.json
+          # Posts a comment to the PR using the 'update' behavior.
+          # This creates a single comment and updates it. The "quietest" option.
+          # The other valid behaviors are:
+          #   delete-and-new - Delete previous comments and create a new one.
+          #   hide-and-new - Minimize previous comments and create a new one.
+          #   new - Create a new cost estimate comment on every push.
+          # See https://www.infracost.io/docs/features/cli_commands/#comment-on-pull-requests for other options.
+          - run:
+              name: Post Infracost comment
+              command: |
+                  # Extract the PR number from the PR URL
+                  PULL_REQUEST_NUMBER=${CIRCLE_PULL_REQUEST##*/}
+                  infracost comment github --path=/tmp/infracost.json \
+                                           --repo=$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME \
+                                           --pull-request=$PULL_REQUEST_NUMBER \
+                                           --github-token=$GITHUB_TOKEN \
+                                           --behavior=update
     workflows:
       infracost:
         jobs:
-          - terraform_plan
-          - infracost:
-              requires:
-                - terraform_plan
+          - infracost
     ```
 
 4. 🎉 That's it! Send a new pull request to change something in Terraform that costs money. You should see a pull request comment that gets updated, e.g. the 📉 and 📈 emojis will update as changes are pushed!
@@ -99,7 +94,7 @@ This project provides instructions for using Infracost in a CircleCI pipeline, i
 
 ![Example Bitbucket screenshot](https://bytebucket.org/infracost/infracost-bitbucket-pipeline/raw/master/screenshot.png)
 
-1. In CircleCI, go to your Project Settings > Environment Variables, and add environment variables for `INFRACOST_API_KEY`, `BITBUCKET_TOKEN`, and any other required credentials (e.g. `AWS_ACCESS_KEY_ID`).
+1. In CircleCI, go to your Project Settings > Environment Variables, and add environment variables for `INFRACOST_API_KEY`, `BITBUCKET_TOKEN`.
 
 2. We recommend you enable CircleCI's "Only build pull requests" option. This setting is in CircleCI's Project > Advanced settings page.
 
@@ -109,37 +104,15 @@ This project provides instructions for using Infracost in a CircleCI pipeline, i
     version: 2.1
 
     jobs:
-      terraform_plan:
-        docker:
-          - image: hashicorp/terraform:latest
-        environment:  # If your terraform files are in a subdirectory, set TF_ROOT accordingly
-          TF_ROOT: PATH/TO/TERRAFORM/CODE # Update this!
-        steps:
-          - run:
-              name: Skip if not pull request
-              command: |
-                if [ "$CIRCLE_PULL_REQUEST" == "" ]; then
-                  circleci step halt
-                fi
-          - checkout
-          - run:
-              name: Run terraform plan
-              command: |
-                # IMPORTANT: add any required steps here to setup cloud credentials so Terraform can run
-                cd $TF_ROOT
-                terraform init
-                terraform plan -out tfplan.binary
-                terraform show -json tfplan.binary > /tmp/plan.json
-          - persist_to_workspace:
-              root: /tmp
-              paths:
-                - plan.json
       infracost:
-        working_directory: terraform
+        # Always use the latest 0.10.x version to pick up bug fixes and new resources.
+        # See https://www.infracost.io/docs/integrations/cicd/#docker-images for other options
         docker:
-          # Always use the latest 0.9.x version to pick up bug fixes and new resources.
-          # See https://www.infracost.io/docs/integrations/cicd/#docker-images for other options
-          - image: infracost/infracost:ci-0.9
+          - image: infracost/infracost:ci-0.10
+        environment:
+          TF_ROOT: terraform # Update this to be your the path to your terraform code!
+          # IMPORTANT: update this to your target branch, e.g. main, master
+          BASE_BRANCH: main
         steps:
           - run:
               name: Skip if not pull request
@@ -150,45 +123,50 @@ This project provides instructions for using Infracost in a CircleCI pipeline, i
           - attach_workspace:
               at: /tmp
           - checkout
+          # Clone the base branch of the pull request (e.g. main/master) into a temp directory.
           - run:
-              name: Run Infracost breakdown
-              command: |
-                # Generate Infracost JSON output, the following docs might be useful:
-                # Multi-project/workspaces: https://www.infracost.io/docs/features/config_file
-                # Combine Infracost JSON files: https://www.infracost.io/docs/features/cli_commands/#combined-output-formats
-                # Environment variables: https://www.infracost.io/docs/integrations/environment_variables/
-                infracost breakdown --path /tmp/plan.json --format json --out-file infracost.json
+              name: Checkout base branch
+              command: git clone $CIRCLE_REPOSITORY_URL --branch=$BASE_BRANCH --single-branch /tmp/base
+          # Generate Infracost JSON file as the baseline.
           - run:
-              name: Run Infracost comment
+              name: Generate Infracost cost estimate baseline
               command: |
-                # Extract the PR number from the PR URL
-                PULL_REQUEST_NUMBER=$(echo "$CIRCLE_PULL_REQUEST" | sed 's/.*pull-requests\///')
-                # See the 'Comment options' section in our README below for other options.
-                infracost comment bitbucket --path infracost.json --repo $CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME --pull-request $PULL_REQUEST_NUMBER --bitbucket-token $BITBUCKET_TOKEN
-
+                  infracost breakdown --path=${TF_ROOT} \
+                                      --format=json \
+                                      --out-file=/tmp/infracost-base.json
+          # Generate an Infracost diff and save it to a JSON file.
+          - run:
+              name: Generate Infracost cost estimate baseline
+              command: |
+                  infracost diff --path=${TF_ROOT} \
+                                --format=json \
+                                --compare-to=/tmp/infracost-base.json \
+                                --out-file=/tmp/infracost.json
+          # Posts a comment to the PR using the 'update' behavior.
+          # This creates a single comment and updates it. The "quietest" option.
+          # The other valid behaviors are:
+          #   delete-and-new - Delete previous comments and create a new one.
+          #   new - Create a new cost estimate comment on every push.
+          # See https://www.infracost.io/docs/features/cli_commands/#comment-on-pull-requests for other options.
+          - run:
+              name: Post Infracost comment
+              command: |
+                  # Extract the PR number from the PR URL
+                  PULL_REQUEST_NUMBER=$(echo "$CIRCLE_PULL_REQUEST" | sed 's/.*pull-requests\///')
+                  infracost comment bitbucket --path=/tmp/infracost.json \
+                                              --repo=$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME \
+                                              --pull-request=$PULL_REQUEST_NUMBER \
+                                              --bitbucket-token $BITBUCKET_TOKEN \
+                                              --behavior=update
     workflows:
       infracost:
         jobs:
-          - terraform_plan
-          - infracost:
-              requires:
-                - terraform_plan
+          - infracost
     ```
 
 4. 🎉 That's it! Send a new pull request to change something in Terraform that costs money. You should see a pull request comment that gets updated, e.g. the '↑' and '↓' characters will update as changes are pushed!
 
 ## Comment options
-
-For different commenting options `infracost comment` command supports the following flags:
-
-- `--behavior <value>`: Optional, defaults to `update`. The behavior to use when posting cost estimate comments. Must be one of the following:
-  - `update`: Create a single comment and update it on changes. This is the "quietest" option. Pull request followers will only be notified on the comment create (not updates), and the comment will stay at the same location in the comment history.
-  - `delete-and-new`: Delete previous cost estimate comments and create a new one. Pull request followers will be notified on each comment.
-  - `hide-and-new`: Minimize previous cost estimate comments and create a new one. Pull request followers will be notified on each comment. Only supported by GitHub.
-  - `new`: Create a new cost estimate comment. Pull request followers will be notified on each comment.
-- `--pull-request <pull-request-number>`: Required when posting a comment on a pull request. Mutually exclusive with `--commit` flag.
-- `--commit <commit-sha>`: Required when posting a comment on a commit. Mutually exclusive with `--pull-request` flag. Not available when bitbucket-server-url is set.
-- `--tag <tag>`:  Optional. Customize hidden markdown tag used to detect comments posted by Infracost. This is useful if you have multiple workflows that post comments to the same pull request or commit and you want to avoid them over-writing each other.
 
 Run `infracost comment github --help` or `infracost comment bitbucket --help` to see the the full list of options or [see our docs](https://www.infracost.io/docs/features/cli_commands#comment-on-pull-requests).
 
