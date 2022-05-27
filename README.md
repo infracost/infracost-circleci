@@ -34,6 +34,10 @@ This project provides instructions for using Infracost in a CircleCI pipeline, i
           TF_ROOT: terraform # Update this to be your the path to your terraform code!
           # IMPORTANT: update this to your target branch, e.g. main, master
           BASE_BRANCH: main
+          # If you use private modules you'll need this env variable to use
+          # the same ssh-agent socket value across all jobs & steps.
+          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+   
         steps:
           - run:
               name: Skip if not pull request
@@ -48,6 +52,19 @@ This project provides instructions for using Infracost in a CircleCI pipeline, i
           - run:
               name: Checkout base branch
               command: git clone $CIRCLE_REPOSITORY_URL --branch=$BASE_BRANCH --single-branch /tmp/base
+   
+          # If you use private modules, add an environment variable or secret
+          # called GIT_SSH_KEY with your private key, so Infracost can access
+          # private repositories (similar to how Terraform/Terragrunt does).
+          # - run:
+          #     name: add git ssh key
+          #     command: | 
+          #       ssh-agent -a ${SSH_AUTH_SOCK}
+          #       mkdir -p ~/.ssh
+          #       echo "${GIT_SSH_KEY}" | tr -d '\r' | ssh-add -
+          #       # Update this to github.com, gitlab.com, bitbucket.org, ssh.dev.azure.com or your source control server's domain
+          #       ssh-keyscan bitbucket.org >> ~/.ssh/known_hosts
+   
           # Generate Infracost JSON file as the baseline.
           - run:
               name: Generate Infracost cost estimate baseline
@@ -113,6 +130,9 @@ This project provides instructions for using Infracost in a CircleCI pipeline, i
           TF_ROOT: terraform # Update this to be your the path to your terraform code!
           # IMPORTANT: update this to your target branch, e.g. main, master
           BASE_BRANCH: main
+          # If you use private modules you'll need this env variable to use
+          # the same ssh-agent socket value across all jobs & steps.
+          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
         steps:
           - run:
               name: Skip if not pull request
@@ -127,6 +147,19 @@ This project provides instructions for using Infracost in a CircleCI pipeline, i
           - run:
               name: Checkout base branch
               command: git clone $CIRCLE_REPOSITORY_URL --branch=$BASE_BRANCH --single-branch /tmp/base
+   
+          # If you use private modules, add an environment variable or secret
+          # called GIT_SSH_KEY with your private key, so Infracost can access
+          # private repositories (similar to how Terraform/Terragrunt does).
+          # - run:
+          #     name: add git ssh key
+          #     command: | 
+          #       ssh-agent -a ${SSH_AUTH_SOCK}
+          #       mkdir -p ~/.ssh
+          #       echo "${GIT_SSH_KEY}" | tr -d '\r' | ssh-add -
+          #       # Update this to github.com, gitlab.com, bitbucket.org, ssh.dev.azure.com or your source control server's domain
+          #       ssh-keyscan bitbucket.org >> ~/.ssh/known_hosts
+   
           # Generate Infracost JSON file as the baseline.
           - run:
               name: Generate Infracost cost estimate baseline
