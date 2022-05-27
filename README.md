@@ -63,7 +63,7 @@ This project provides instructions for using Infracost in a CircleCI pipeline, i
           #       mkdir -p ~/.ssh
           #       echo "${GIT_SSH_KEY}" | tr -d '\r' | ssh-add -
           #       # Update this to github.com, gitlab.com, bitbucket.org, ssh.dev.azure.com or your source control server's domain
-          #       ssh-keyscan bitbucket.org >> ~/.ssh/known_hosts
+          #       ssh-keyscan github.com >> ~/.ssh/known_hosts
    
           # Generate Infracost JSON file as the baseline.
           - run:
