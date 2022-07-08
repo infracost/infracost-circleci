@@ -15,11 +15,15 @@ This project provides instructions for using Infracost in a CircleCI pipeline, i
 
 ![Example GitHub screenshot](https://github.com/infracost/actions/blob/master/.github/assets/screenshot.png?raw=true)
 
-1. In CircleCI, go to your Project Settings > Environment Variables, and add environment variables for `INFRACOST_API_KEY`, `GITHUB_TOKEN`.
+1. If you haven't done so already, [download Infracost](https://www.infracost.io/docs/#quick-start) and run `infracost auth login` to get a free API key.
 
-2. We recommend you enable CircleCI's "Only build pull requests" option. This setting is in CircleCI's Project > Advanced settings page.
+2. Retrieve your Infracost API key by running `infracost configure get api_key`.
 
-3. Create a new file at `.circleci/config.yml` in your repo with the following content.
+3. In CircleCI, go to your Project Settings > Environment Variables, and add environment variables for `INFRACOST_API_KEY`, `GITHUB_TOKEN`.
+
+4. We recommend you enable CircleCI's "Only build pull requests" option. This setting is in CircleCI's Project > Advanced settings page.
+
+5. Create a new file at `.circleci/config.yml` in your repo with the following content.
 
     ```yml
     version: 2.1
@@ -37,6 +41,10 @@ This project provides instructions for using Infracost in a CircleCI pipeline, i
           # If you use private modules you'll need this env variable to use
           # the same ssh-agent socket value across all jobs & steps.
           SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+          # If you're using Terraform Cloud/Enterprise and have variables or private modules stored
+          # on there, specify the following to automatically retrieve the variables:
+          # INFRACOST_TERRAFORM_CLOUD_TOKEN: $TFC_TOKEN
+          # INFRACOST_TERRAFORM_CLOUD_HOST: app.terraform.io # Change this if you're using Terraform Enterprise
    
         steps:
           - run:
@@ -87,35 +95,50 @@ This project provides instructions for using Infracost in a CircleCI pipeline, i
           #   hide-and-new - Minimize previous comments and create a new one.
           #   new - Create a new cost estimate comment on every push.
           # See https://www.infracost.io/docs/features/cli_commands/#comment-on-pull-requests for other options.
+          # The INFRACOST_ENABLE_CLOUD​=true section instructs the CLI to send its JSON output to Infracost Cloud.
+          #   This SaaS product gives you visibility across all changes in a dashboard. The JSON output does not
+          #   contain any cloud credentials or secrets.
           - run:
               name: Post Infracost comment
               command: |
                   # Extract the PR number from the PR URL
                   PULL_REQUEST_NUMBER=${CIRCLE_PULL_REQUEST##*/}
-                  infracost comment github --path=/tmp/infracost.json \
-                                           --repo=$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME \
-                                           --pull-request=$PULL_REQUEST_NUMBER \
-                                           --github-token=$GITHUB_TOKEN \
-                                           --behavior=update
+                  INFRACOST_ENABLE_CLOUD​=true infracost comment github --path=/tmp/infracost.json \
+                                                                        --repo=$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME \
+                                                                        --pull-request=$PULL_REQUEST_NUMBER \
+                                                                        --github-token=$GITHUB_TOKEN \
+                                                                        --behavior=update
     workflows:
       infracost:
         jobs:
           - infracost
     ```
 
-4. 🎉 That's it! Send a new pull request to change something in Terraform that costs money. You should see a pull request comment that gets updated, e.g. the 📉 and 📈 emojis will update as changes are pushed!
+6. 🎉 That's it! Send a new pull request to change something in Terraform that costs money. You should see a pull request comment that gets updated, e.g. the 📉 and 📈 emojis will update as changes are pushed!
 
-5. Follow [the docs](https://www.infracost.io/usage-file) if you'd also like to show cost for of usage-based resources such as AWS Lambda or S3. The usage for these resources are fetched from CloudWatch/cloud APIs and used to calculate an estimate.
+   If there are issues, check the GitHub Actions logs and [this page](https://www.infracost.io/docs/troubleshooting/).
+
+    <img src=".github/assets/pr-comment.png" alt="Example pull request" width="70%" />
+
+7. To see the test pull request costs in Infracost Cloud, [log in](https://dashboard.infracost.io/) > switch to your organization > Projects. To learn more, see [our docs](https://www.infracost.io/docs/infracost_cloud/get_started/).
+
+    <img src=".github/assets/infracost-cloud-runs.png" alt="Infracost Cloud gives team leads, managers and FinOps practitioners to have visibility across all cost estimates in CI/CD" width="90%" />
+
+8. Follow [the docs](https://www.infracost.io/usage-file) if you'd also like to show cost for of usage-based resources such as AWS Lambda or S3. The usage for these resources are fetched from CloudWatch/cloud APIs and used to calculate an estimate.
 
 ## Bitbucket Cloud Quick start
 
-![Example Bitbucket screenshot](https://bytebucket.org/infracost/infracost-bitbucket-pipeline/raw/master/screenshot.png)
+![Example Bitbucket screenshot](./github/assets/bitbu.png)
 
-1. In CircleCI, go to your Project Settings > Environment Variables, and add environment variables for `INFRACOST_API_KEY`, `BITBUCKET_TOKEN`.
+1. If you haven't done so already, [download Infracost](https://www.infracost.io/docs/#quick-start) and run `infracost auth login` to get a free API key.
 
-2. We recommend you enable CircleCI's "Only build pull requests" option. This setting is in CircleCI's Project > Advanced settings page.
+2. Retrieve your Infracost API key by running `infracost configure get api_key`.
 
-3. Create a new file at `.circleci/config.yml` in your repo with the following content.
+3. In CircleCI, go to your Project Settings > Environment Variables, and add environment variables for `INFRACOST_API_KEY`, `BITBUCKET_TOKEN`.
+
+4. We recommend you enable CircleCI's "Only build pull requests" option. This setting is in CircleCI's Project > Advanced settings page.
+
+5. Create a new file at `.circleci/config.yml` in your repo with the following content.
 
     ```yml
     version: 2.1
@@ -133,6 +156,10 @@ This project provides instructions for using Infracost in a CircleCI pipeline, i
           # If you use private modules you'll need this env variable to use
           # the same ssh-agent socket value across all jobs & steps.
           SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+          # If you're using Terraform Cloud/Enterprise and have variables or private modules stored
+          # on there, specify the following to automatically retrieve the variables:
+          # INFRACOST_TERRAFORM_CLOUD_TOKEN: $TFC_TOKEN
+          # INFRACOST_TERRAFORM_CLOUD_HOST: app.terraform.io # Change this if you're using Terraform Enterprise
         steps:
           - run:
               name: Skip if not pull request
@@ -181,23 +208,34 @@ This project provides instructions for using Infracost in a CircleCI pipeline, i
           #   delete-and-new - Delete previous comments and create a new one.
           #   new - Create a new cost estimate comment on every push.
           # See https://www.infracost.io/docs/features/cli_commands/#comment-on-pull-requests for other options.
+          # The INFRACOST_ENABLE_CLOUD​=true section instructs the CLI to send its JSON output to Infracost Cloud.
+          #   This SaaS product gives you visibility across all changes in a dashboard. The JSON output does not
+          #   contain any cloud credentials or secrets.
           - run:
               name: Post Infracost comment
               command: |
                   # Extract the PR number from the PR URL
                   PULL_REQUEST_NUMBER=$(echo "$CIRCLE_PULL_REQUEST" | sed 's/.*pull-requests\///')
-                  infracost comment bitbucket --path=/tmp/infracost.json \
-                                              --repo=$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME \
-                                              --pull-request=$PULL_REQUEST_NUMBER \
-                                              --bitbucket-token $BITBUCKET_TOKEN \
-                                              --behavior=update
+                  INFRACOST_ENABLE_CLOUD​=true infracost comment bitbucket --path=/tmp/infracost.json \
+                                                                           --repo=$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME \
+                                                                            --pull-request=$PULL_REQUEST_NUMBER \
+                                                                            --bitbucket-token $BITBUCKET_TOKEN \
+                                                                            --behavior=update
     workflows:
       infracost:
         jobs:
           - infracost
     ```
 
-4. 🎉 That's it! Send a new pull request to change something in Terraform that costs money. You should see a pull request comment that gets updated, e.g. the '↑' and '↓' characters will update as changes are pushed!
+6. 🎉 That's it! Send a new pull request to change something in Terraform that costs money. You should see a pull request comment that gets updated, e.g. the '↑' and '↓' characters will update as changes are pushed!
+
+    <img src=".github/assets/bitbucket-comment.png" alt="Example pull request" width="70%" />
+
+7. To see the test pull request costs in Infracost Cloud, [log in](https://dashboard.infracost.io/) > switch to your organization > Projects. To learn more, see [our docs](https://www.infracost.io/docs/infracost_cloud/get_started/).
+
+   <img src=".github/assets/infracost-cloud-runs.png" alt="Infracost Cloud gives team leads, managers and FinOps practitioners to have visibility across all cost estimates in CI/CD" width="90%" />
+
+8. Follow [the docs](https://www.infracost.io/usage-file) if you'd also like to show cost for of usage-based resources such as AWS Lambda or S3. The usage for these resources are fetched from CloudWatch/cloud APIs and used to calculate an estimate.
 
 ## Comment options
 
