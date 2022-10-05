@@ -45,7 +45,7 @@ This project provides instructions for using Infracost in a CircleCI pipeline, i
           # on there, specify the following to automatically retrieve the variables:
           # INFRACOST_TERRAFORM_CLOUD_TOKEN: $TFC_TOKEN
           # INFRACOST_TERRAFORM_CLOUD_HOST: app.terraform.io # Change this if you're using Terraform Enterprise
-   
+
         steps:
           - run:
               name: Skip if not pull request
@@ -60,7 +60,7 @@ This project provides instructions for using Infracost in a CircleCI pipeline, i
           - run:
               name: Checkout base branch
               command: git clone $CIRCLE_REPOSITORY_URL --branch=$BASE_BRANCH --single-branch /tmp/base
-   
+
           # If you use private modules, add an environment variable or secret
           # called GIT_SSH_KEY with your private key, so Infracost can access
           # private repositories (similar to how Terraform/Terragrunt does).
@@ -72,12 +72,12 @@ This project provides instructions for using Infracost in a CircleCI pipeline, i
           #       echo "${GIT_SSH_KEY}" | tr -d '\r' | ssh-add -
           #       # Update this to github.com, gitlab.com, bitbucket.org, ssh.dev.azure.com or your source control server's domain
           #       ssh-keyscan github.com >> ~/.ssh/known_hosts
-   
+
           # Generate Infracost JSON file as the baseline.
           - run:
               name: Generate Infracost cost estimate baseline
               command: |
-                  infracost breakdown --path=${TF_ROOT} \
+                  infracost breakdown --path=/tmp/base \
                                       --format=json \
                                       --out-file=/tmp/infracost-base.json
           # Generate an Infracost diff and save it to a JSON file.
