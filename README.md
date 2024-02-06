@@ -188,7 +188,7 @@ This project provides instructions for using Infracost in a CircleCI pipeline, i
           - run:
               name: Generate Infracost cost estimate baseline
               command: |
-                  infracost breakdown --path=/tmp/base \
+                  infracost breakdown --path=/tmp/base/${TF_ROOT} \
                                       --format=json \
                                       --out-file=/tmp/infracost-base.json
           # Generate an Infracost diff and save it to a JSON file.
